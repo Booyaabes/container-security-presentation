@@ -2,7 +2,7 @@
 
 ## How to run
 
-Clone or download this repository and just open the _container-security.html_ file with your browser.
+Clone or download this repository and just open the _index.html_ file with your browser.
 
 ## Credits
 
