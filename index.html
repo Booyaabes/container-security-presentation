@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
@@ -16,7 +16,7 @@
 
     <!-- Printing and PDF exports -->
     <script>
-        var link = document.createElement('link');
+        let link = document.createElement('link');
         link.rel = 'stylesheet';
         link.type = 'text/css';
         link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css';
@@ -36,7 +36,8 @@
                     <li>First, let me introduce myself:</li>
                     <li>I'm Sébastien Baillet,</li>
                     <li>I'm a cybersecurity expert from Thales,</li>
-                    <li>At the moment, I'm technical security referent at ADEO Inhabitant Social Platform</li>
+                    <li>At the moment, I'm security referent at ADEO Digital Tech Platform Operational security Team </li>
+                </ul>
             </aside>
         </section>
 
@@ -44,10 +45,8 @@
             <h2>Old School Survey</h2>
             <aside class="notes">
                 <ul>
-                    <li>Before we begin:</li>
-                    <li>Who is developer?</li>
-                    <li>Who makes DevOps? (or believes he makes DevOps)</li>
-                    <li>Who makes or uses containers?</li>
+                    <li>I hope everyone here know what a container is</li>
+                    <li>But:</li>
                     <li>Who think he has the skills to be responsible of his project security?</li>
                     <li>Who has a security referent in his team?</li>
                     <li>Who know that DevOps teams are responsible of their project security?</li>
@@ -59,10 +58,10 @@
             <img src="images/mutualized-cloud-risk.gif" style="border:0" alt="mutualized cloud risks">
             <aside class="notes">
                 <ul>
-                    <li>As of all of you should know, Manawa is a mutualized cloud,where we can deploy publicly exposed applications,</li>
-                    <li>What happen if an attacker takes control of a container deployed on Manawa,</li>
-                    <li>He may be able to attack other applications deployed on Manawa, database or even infrastructure...</li>
-                    <li>That's why we have to build hardened images and use container safely,</li>
+                    <li>As of all of you should know, Manawa On premise or on GCP is a mutualized cloud,where we can deploy publicly exposed applications,</li>
+                    <li>What happens if an attacker takes control of a container deployed on Manawa,</li>
+                    <li>He may be able to attack other applications deployed on Manawa, databases or even infrastructure...</li>
+                    <li>That's why we have to build hardened images and use container safely, to avoid propagation of an attack</li>
                     <li>One project must not impose risks to others.</li>
                 </ul>
             </aside>
@@ -74,21 +73,23 @@
             <ul>
                 <li class="fragment"><a href="#/good-practices">Good practices</a></li>
                 <li class="fragment"><a href="#/howto-work">How to work with hardened images</a></li>
+                <li class="fragment"><a href="#/patch-management">What about patch management</a></li>
             </ul>
             <aside class="notes">
                 <p>So, in this presentation:</p>
                 <ul>
                     <li>We will talk about good practices regarding image creation and container use,</li>
                     <li>Next, I'll answer the question you'll ask yourself at the end of the first part: how to be able to work if I follow what this guys told us.</li>
+                    <li>Finally, we will talk about patch management, or, more precisely, spoiler alert, the lack of patch management in case of container.</li>
                 </ul>
             </aside>
         </section>
 
         <!-- Good practices -->
         <section id="good-practices">
-            <h2>Container use and images creation good practices</h2>
+            <h2>Container use and image creation good practices</h2>
             <aside class="notes">
-                So, Good practices regarding container use and images creation.
+                So, Good practices regarding container use and image creation.
             </aside>
         </section>
 
@@ -97,9 +98,10 @@
             <p>To prevent the possibility to escape as root, containers must not be executed as root.</p>
             <aside class="notes">
                 <ul>
-                    <li>Let's start by what is, I hope, the most obvious one:</li>
+                    <li>Let's start by what is the most obvious one for security teams, but not for project teams:</li>
                     <li>Containers must not be executed as root,</li>
-                    <li>The main purpose is to prevent the following case : if a vulnerability allows an attacker to escape from a compromised container, he will escape as root, compromising the host.</li>
+                    <li>If a process is executed as root in a container, he is executed as root on the host. So if a vulnerability allows an attacker to escape from a compromised container running as root, he will escape as root, compromising the host.</li>
+                    <li>There are others advantages too: in a non root container, an attacker won't be able to make privileged operation (for example: installing tools with a package manager)</li>
                 </ul>
             </aside>
         </section>
@@ -150,9 +152,6 @@
                         |SETFCAP|Set file capabilities|
                         |NET_RAW|Use RAW and PACKET sockets|
                     </textarea>
-                <aside class="notes">
-                    For example, if a process has SYS_BOOT capability it can reboot the system, it can't if it hasn't this capability.
-                </aside>
             </section>
 
             <section>
@@ -213,17 +212,50 @@
                     </ul>
                 </aside>
             </section>
+            <section>
+                <h2>OpenShift example</h2>
+                <pre>
+                    <code class="stretch yaml">
+apiVersion: v1
+kind: Pod
+metadata:
+  name: volume-test
+spec:
+  containers:
+   - name: container-test
+  image: busybox
+  securityContext:
+    capabilities:
+      drop:
+       - MKNOD
+                        </code>
+                </pre>
+            </section>
         </section>
 
         <section>
             <section>
-                <h2>Images <span style="color: darkred">should</span> contain only the strict minimum</h2>
+                <h2>Images <span style="color: cornflowerblue">should</span> contain only the strict minimum</h2>
                 <p>Images should contain only the strict minimum to allow the application to run.</p>
                 <aside class="notes">
                     <ul>
                         <li>Ideally, final image should contain only the strict minimum to allow the containerized application to run.</li>
-                        <li>For example, an image should not contain shell/bash, package manager, compiler or any other tool not required by the application</li>
                         <li>Again, the purpose is to give less possibility for an attacker that has taken control of the container.</li>
+                    </ul>
+                </aside>
+            </section>
+            <section>
+                <h2>Images <span style="color: cornflowerblue">should</span> contain only the strict minimum</h2>
+                <p>For example:</p>
+                <ul>
+                    <li>No shell/bash,</li>
+                    <li>No package manager,</li>
+                    <li>No compiler (GCC, JDK...),</li>
+                    <li>...</li>
+                    <li>No any other tool not required by the application.</li>
+                </ul>
+                <aside class="notes">
+                    <ul>
                         <li>To achieve this goal, you usually have to use multi-stage builds and distroless or equivalent base image, or even better scratch base image.</li>
                     </ul>
                 </aside>
@@ -231,7 +263,7 @@
 
             <section>
                 <h3>Multi-Stage builds and Distroless example</h3>
-                <pre><code class="docker stretch" data-trim data-line-numbers="1,6,7" >
+                <pre><code class="docker stretch" data-trim data-line-numbers="1|1,6|1,6,7" >
 FROM maven:3.6.1-jdk-11-slim as BUILDER
 WORKDIR /app
 COPY . /app/
@@ -290,7 +322,7 @@ spec:
         <section>
             <h2>Secret <span style="color:darkred">must not</span> be embedded in image</h2>
             <p>No secret in image</p>
-            <p>Please follow the guideline: <a href="https://github.com/adeo/github-security-guidelines">https://github.com/adeo/github-security-guidelines</a></p>
+            <p>Please follow the guideline and use Vault: <a href="https://github.com/adeo/github-security-guidelines">https://github.com/adeo/github-security-guidelines</a></p>
             <img src="images/adeo-github-security-guidelines-repository.png">
             <aside class="notes">
                 <ul>
@@ -373,7 +405,7 @@ spec:
                         <li>Process ID (PID): each process in the same PID namespace can see each others and won't see processes in another PID namespace,</li>
                         <li>Network: every processes in the same network namespace share the same network interface(s), by default only loopback interface. An interface can be in only one network namespace,</li>
                         <li>Mount: every processes in the same mount namespace have access to the same mount points, and won't have access to mount points of another mount namespace,</li>
-                        <li>Interprocess Communication (IPC): each process in the same IPC namespace can use interprocess communication with each other, allowing shared-memory between processes and signal usage (SIGKILL, SIGINT...),</li>
+                        <li>Interprocess Communication (IPC): each process in the same IPC namespace can use interprocess communication with each other, allowing shared-memory between processes,</li>
                         <li>Unix Time Sharing (UTS): every processes in the same UTS namespace share the same host/domain name,</li>
                         <li>User ID (UID): every processes in the same UID namespace share the same user table. Each UID namespace has a mapping table converting user IDs from the container's point of view to the system's point of view,</li>
                         <li>Control Group (cgroup): every processes in the same cgroup namespace share the same cgroup resource limitation.</li>
@@ -438,36 +470,20 @@ spec:
             <section>
                 <h3>Pods Isolation</h3>
                 <p>Pods (atomic unit of Kubernetes deployment) can contain one or more containers. This containers share IPC, Network and PID namespaces, but have specific cgroup:</p>
-                <img src="./images/ns-pods.png" style="border: 0; background: transparent;" height="320px">
+                <img src="./images/ns-pods.png" style="border: 0; background: transparent;" height="320px" alt="namespace & pod">
             </section>
             <section>
                 <h3>Pods Isolation</h3>
                 <p>Demo: debugging network problems</p>
+                <aside class="notes">
+                    <ul>
+                        <li>Let's say we have network problem: my app can't reach its database, but we don't know if the problem comes from the configuration of my app, or from a network problem (ex.: firewall)</li>
+                    </ul>
+                </aside>
             </section>
             <section data-background-video="videos/demo-debug-pod-network.m4v" data-background-size="contain">
 
             </section>
-        </section>
-
-        <section>
-            <h2>Takeaway</h2>
-            <ul>
-                <li class="fragment">Container must not run as root,</li>
-                <li class="fragment">Container should have the strictly minimum capabilities,</li>
-                <li class="fragment">Build minimalist images,</li>
-                <li class="fragment">Run container read-only,</li>
-                <li class="fragment">No secret in images.</li>
-            </ul>
-            <aside class="notes">
-                <ul>
-                    <li>Container must not run as root,</li>
-                    <li>Container should have the strictly minimum capabilities,</li>
-                    <li>Build minimalist images,</li>
-                    <li>Run container read-only,</li>
-                    <li>No secret in images.</li>
-                    <li>with the tips I gave you, you can make smaller images, that are more secure while you can continue working with.</li>
-                </ul>
-            </aside>
         </section>
 
         <section>
@@ -482,13 +498,131 @@ spec:
             </aside>
         </section>
 
+        <!-- Patch management -->
+        <section id="patch-management">
+            <h2>Patch management: why and what for?</h2>
+        </section>
+
+        <section>
+            <h2>Patch management: purpose</h2>
+            <ul>
+                <li>Avoid known vulnerabilities in third party applications on servers</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Patch management: how to?</h2>
+            <ul>
+                <li>Patch as frequently as possible</li>
+                <li>Know the exact state of the patch management on your server pool at any moment</li>
+            </ul>
+        </section>
+
+        <section id="container-patch-management">
+            <h2>Container & Patch Management</h2>
+        </section>
+
+        <section>
+            <h2>So...?</h2>
+            <ul>
+                <li>Update dependencies in your image (and rebuild it...)</li>
+                <li>Deploy often</li>
+                <li>Scan your images regularly</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Golden source</h2>
+            <p>The image you build your image from should be trustable (i.e. one of the items below should apply):</p>
+            <ul>
+                <li class="fragment">the base image is build and maintained by your organisation,</li>
+                <li class="fragment">the base image is tagged as official in Docker Hub, or OpenShift Registry,</li>
+                <li class="fragment">at least, the base image is a Docker Hub automated build, and its base image is tagged official in Docker Hub, and you have made a sanity check on the Dockerfile and on the tools embedded.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Golden source</h2>
+            <p>Please use and contribute to <a href="">Dockerfiles-collection</a> repository, to make of it a de facto standard</p>
+            <img src="images/adeo-github-dockerfiles-collection-repository.png" alt="dockerfiles-collection url">
+        </section>
+
+        <section>
+            <h2>Image scanner</h2>
+            <ul>
+                <li><a href="https://adeo-xray.jfrog.io/">X-Ray from JFrog</a></li>
+                <li><a href="https://www.jfrog.com/confluence/display/XRAY/">X-Ray documentation</a></li>
+            </ul>
+            <aside class="notes">
+                <ul>
+                    <li>Image scanner can detect CVE (Common Vulnerabily Enumeration) that are present in the image.</li>
+                    <li>X-Ray from jfrog can be used for on-demand scan.</li>
+                </ul>
+            </aside>
+        </section>
+
+        <section>
+            <h2>Image scanner</h2>
+            <ul>
+                <li><a href="https://www.qualys.com/apps/container-security/">Qualys Container Security</a></li>
+                <li><i>Work in progress</i></li>
+            </ul>
+            <aside class="notes">
+                <ul>
+                    <li>Qualys has a Container Security application. A agent is deployed on hosts, and it scan running container for CVE.</li>
+                    <li>It's a work in progress, and it should be available soon. If you have questions on this subject, you can ask Quentin Torres and Mickael Winnepenninckx</li>
+                </ul>
+            </aside>
+        </section>
+
+        <section>
+            <h2>Dependency scanner</h2>
+            <p>80% of your code is not made by your team. Use scanner to detect known vulnerabilities in your dependencies.</p>
+            <p>For example, <a href="https://www.owasp.org/index.php/OWASP_Dependency_Check">Dependency Check</a> from <a href="https://www.owasp.org/">OWASP</a>.</p>
+        </section>
+
+        <section>
+            <h2>Takeaway</h2>
+            <ul>
+                <li class="fragment">Container must not run as root,</li>
+                <li class="fragment">Container should have the strictly minimum capabilities,</li>
+                <li class="fragment">Build minimalist images,</li>
+                <li class="fragment">Run container read-only,</li>
+                <li class="fragment">No secret in images,</li>
+                <li class="fragment">Monitor and update your dependencies</li>
+                <li class="fragment">Deploy often.</li>
+            </ul>
+            <aside class="notes">
+                <ul>
+                    <li>Container must not run as root,</li>
+                    <li>Container should have the strictly minimum capabilities,</li>
+                    <li>Build minimalist images,</li>
+                    <li>Run container read-only,</li>
+                    <li>No secret in images.</li>
+                    <li>with the tips I gave you, you can make smaller images, that are more secure while you can continue working with.</li>
+                    <li>Update your dependencies,</li>
+                    <li>Deploy often.</li>
+                </ul>
+            </aside>
+        </section>
+
         <section>
             <h1>Any questions?</h1>
         </section>
 
         <section>
             <h2>Thank you for your attention</h2>
-            <img src="images/thx.gif" style="border: 0" alt="Thank you">
+            <a href="https://iwdrm.tumblr.com/">
+                <img src="images/thx.gif" style="border: 0" alt="Thank you">
+            </a>
+        </section>
+
+        <section>
+            <h2>Credits</h2>
+            <ul>
+                <li>The presentation has been made with <a href="https://github.com/hakimel/reveal.js/">reveal.js</a>,</li>
+                <li>The gifs come from <a href="https://iwdrm.tumblr.com/">If we don't, remember me</a> tumblr.</li>
+            </ul>
         </section>
     </div>
 </div>
@@ -507,7 +641,7 @@ spec:
             { src: 'plugin/notes/notes.js', async: true },
             { src: 'plugin/highlight/highlight.js', async: true },
             { src: 'plugin/embed-tweet/embed-tweet.js' }
-         ]
+        ]
     });
 
     Reveal.configure({ slideNumber: 'c/t' });
